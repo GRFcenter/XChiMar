@@ -1,4 +1,8 @@
-# XChiMar: Machine Learning-Based Genotype Correction in Chimeric Marmosets
+<p align="center">
+  <img src="./XChiMar_logo3.png" alt="XChiMar Logo" width="300"/>
+</p>
+
+## XChiMar: Machine Learning-Based Genotype Correction in Chimeric Marmosets
 
 **XChiMar** is a machine learning-based genotyping correction tool specifically designed to address chimerism-induced errors in next-generation sequencing (NGS) data from _Callithrix_ marmosets. It leverages an XGBoost classifier trained on allele balance metrics to improve variant calling accuracy in chimeric, non-blood tissues such as hair follicles, tail, and ear.
 
