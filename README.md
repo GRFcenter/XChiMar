@@ -23,10 +23,8 @@ In chimeric marmosets, especially in non-blood tissues, standard variant callers
 ## Example
 
 ## LICENSE
-This software is available for academic and non-commercial research use only.  
-Commercial use is prohibited without written permission.
-
-Please contact [grf@pgi.re.kr] for licensing inquiries.
+This project is licensed under the [MIT License](LICENSE) with a patent notice. See the LICENSE file for details.
+For commercial use or questions regarding the pending patent, please contact [grf@pgi.re.kr](mailto:grf@pgi.re.kr).
 
 ## Citation
 
