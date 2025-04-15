@@ -120,8 +120,7 @@ genotyping_ml_pipeline/
 
 ## 🔒 License
 
-This software and training pipeline are provided for **academic and non-commercial use only**.  
-Commercial use is strictly prohibited without written permission.
+This project is licensed under the [MIT License](LICENSE) with a patent notice. See the LICENSE file for details.
+For commercial use or questions regarding the pending patent, please contact [grf@pgi.re.kr](mailto:grf@pgi.re.kr).
 
-Please contact **[grf@pgi.re.kr]** for licensing inquiries.
 
