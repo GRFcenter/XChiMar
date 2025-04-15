@@ -22,7 +22,7 @@ In chimeric marmosets, especially in non-blood tissues, standard variant callers
 This software is available for academic and non-commercial research use only.  
 Commercial use is prohibited without written permission.
 
-Please contact [webmaster.grf@gmail.com] for licensing inquiries.
+Please contact [grf@pgi.re.kr] for licensing inquiries.
 
 ## Citation
 
