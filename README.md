@@ -67,7 +67,7 @@ Below is an example configuration file for running the XChiMar pipeline. Modify 
 # config.yml
 
 # Input VCF file parsed for XChiMar (generated using Step1 script or provided in example_data)
-input_vcf: "./example_data/input_data/1612151M.vcf.gz"
+input_dir: "./example_data/input_data"
 
 # Output directory for corrected VCF and performance metrics
 output_dir: "./example_data/output/"
@@ -75,8 +75,6 @@ output_dir: "./example_data/output/"
 # Path to pre-trained XChiMar model (XGBoost .rds file)
 model_path: "./model/xgboost_final_model.rds"
 
-# Sample name (used for output file naming)
-sample_id: "1612151M"
 
 - The actual XChiMar can be easily run as follows: bash run_XChiMar.sh config.yml
 ```
