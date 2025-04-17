@@ -44,8 +44,8 @@ R environment
 - Using the data ("./GRFcenter/XChiMar/example_data/input_data/1612151M.vcf.gz"), you can obtain the genotype prediction 
   performance using the XChiMar model and the updated genotype vcf file as a result.
 - If you set the path as follows in config.yml, you can easily use it according to your environment as follows.
-__________________________________________________________________________________________________
-- # config.yaml
+
+# config.yaml
 # Just change the path to suit your environment.
 
 # 1. Input directory containing VCF files
@@ -59,7 +59,7 @@ output_dir: "/your/path/to/output/results"
 # 3. Trained XGBoost model RDS file path
 model_path: "/your/path/to/xgboost_final_model.rds"
 # ex) model_path: "C:/Users/user/OneDrive/Giga_science/XChiMar/code/xgboost_final_model.rds"
-__________________________________________________________________________________________________
+
 - The actual XChiMar can be easily run as follows: bash run_XChiMar.sh config.yml
   
 ## LICENSE
