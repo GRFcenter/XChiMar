@@ -16,49 +16,64 @@ In chimeric marmosets, especially in non-blood tissues, standard variant callers
 - **Interpretable predictions ** : Provides insights into false positives and false negatives caused by heterozygous overcalls.
 - Validated across 56 chimeric common marmosets and applied to public datasets across _Callithrix jacchus_, _C. geoffroyi_, and _C. kuhlii_. 
 
-## Installation
-Linux shell environment
-- bash  
-- bcftools >= 1.9
-- htslib >= 1.9
-- awk
-- R >= 4.3.3
-- Phython3
 
-R environment
-- install.packages("data.table")
-- install.packages("xgboost")
-- install.packages("caret")
-- install.packages("pROC")
-- install.packages("PRROC")
+## System Requirements
+
+This pipeline requires a Unix-like environment with the following dependencies:
+
+#### Shell tools
+- `bash`
+- `awk`
+- `bcftools` (>= 1.9)
+- `htslib` (>= 1.9)
+
+#### Programming environments
+- `R` (>= 4.3.3)
+- `Python3`
+
+#### R packages
+Install the required packages in R:
+```r
+install.packages(c("data.table", "xgboost", "caret", "pROC", "PRROC"))
+```
   
 ## Usage
-- The run_XChiMar.sh code loads the pre-trained xgboost model (XChiMar); xgboost_final_model.rds using hair data from Marmoset I4938 
-  samples, and can be used through a simple shell command. 
-- It can be run with the following command: bash run_XChiMar.sh config.yml
-- At this time, the data and directory paths suitable for the user environment are specified in the config.yml file, considering user 
-  convenience and enabling flexible use.
+The run_XChiMar.sh script executes genotype correction using the pre-trained XGBoost model (xgboost_final_model.rds), trained on hair follicle data from the chimeric marmoset individual I4938. It can be run with a single shell command:
+
+```
+bash run_XChiMar.sh config.yml
+```
+The config.yml file should be customized to reflect the user's data paths and directory structure, allowing for flexible and user-friendly execution across different environments.
+
+
   
 ## Example
-- We provide example_data and code in https://github.com/GRFcenter/XChiMar/.
-- Using the data ("./GRFcenter/XChiMar/example_data/input_data/1612151M.vcf.gz"), you can obtain the genotype prediction 
-  performance using the XChiMar model and the updated genotype vcf file as a result.
-- If you set the path as follows in config.yml, you can easily use it according to your environment as follows.
 
-  - config.yaml -
-   Just change the path to suit your environment.
+Example data and scripts are available at: [https://github.com/GRFcenter/XChiMar/](https://github.com/GRFcenter/XChiMar/)
+Using the provided input file (`./GRFcenter/XChiMar/example_data/input_data/1612151M.vcf.gz`), you can evaluate genotype prediction performance with the XChiMar model and generate an updated VCF file containing the corrected genotypes.
+To run the pipeline, simply specify the appropriate paths in the `config.yml` file according to your environment, and execute the following command:
 
-   1. Input directory containing VCF files
-    input_dir: "/your/path/to/input/vcf_dir"
-    ex) input_dir: "C:/Users/user/OneDrive/Giga_science/XChiMar/example_data/input_data"
+```bash
+bash run_XChiMar.sh config.yml
+```
+### Example `config.yml`
 
-   2. Output directory to save results (subfolders for each sample are automatically created)
-    output_dir: "/your/path/to/output/results"
-    ex) output_dir: "C:/Users/user/OneDrive/Giga_science/XChiMar/example_data/output_data"
+Below is an example configuration file for running the XChiMar pipeline. Modify the paths according to your environment:
 
-   3. Trained XGBoost model RDS file path
-    model_path: "/your/path/to/xgboost_final_model.rds"
-    ex) model_path: "C:/Users/user/OneDrive/Giga_science/XChiMar/code/xgboost_final_model.rds"
+```yaml
+# config.yml
+
+# Input VCF file parsed for XChiMar (generated using Step1 script or provided in example_data)
+input_vcf: "./example_data/input_data/1612151M.vcf.gz"
+
+# Output directory for corrected VCF and performance metrics
+output_dir: "./example_data/output/"
+
+# Path to pre-trained XChiMar model (XGBoost .rds file)
+model_path: "./model/xgboost_final_model.rds"
+
+# Sample name (used for output file naming)
+sample_id: "1612151M"
 
 - The actual XChiMar can be easily run as follows: bash run_XChiMar.sh config.yml
   
