@@ -38,23 +38,26 @@ install.packages(c("data.table", "xgboost", "caret", "pROC", "PRROC"))
 ```
   
 ## Usage
-The run_XChiMar.sh script executes genotype correction using the pre-trained XGBoost model (xgboost_final_model.rds), trained on hair follicle data from the chimeric marmoset individual I4938. It can be run with a single shell command:
 
-```
-bash run_XChiMar.sh config.yml
-```
-The config.yml file should be customized to reflect the user's data paths and directory structure, allowing for flexible and user-friendly execution across different environments.
-
-
-  
-## Example
-
-Example data and scripts are available at: [https://github.com/GRFcenter/XChiMar/](https://github.com/GRFcenter/XChiMar/)
-Using the provided input file (`./GRFcenter/XChiMar/example_data/input_data/1612151M.vcf.gz`), you can evaluate genotype prediction performance with the XChiMar model and generate an updated VCF file containing the corrected genotypes.
-To run the pipeline, simply specify the appropriate paths in the `config.yml` file according to your environment, and execute the following command:
+XChiMar can be executed with a single shell command using the provided `run_XChiMar.sh` script.  
+This script performs genotype correction using a pre-trained XGBoost model (`xgboost_final_model.rds`).
 
 ```bash
 bash run_XChiMar.sh config.yml
+
+```
+
+  
+
+
+```markdown
+## Example
+Example data and scripts are available at: [https://github.com/GRFcenter/XChiMar/](https://github.com/GRFcenter/XChiMar/)
+
+Using the provided input file (`example_data/input_data/1612151M.vcf.gz`),  
+you can evaluate genotype prediction performance with the XChiMar model  
+and generate an updated VCF file containing the corrected genotypes.
+
 ```
 ### Example `config.yml`
 
@@ -76,16 +79,16 @@ model_path: "./model/xgboost_final_model.rds"
 sample_id: "1612151M"
 
 - The actual XChiMar can be easily run as follows: bash run_XChiMar.sh config.yml
+```
   
 ## LICENSE
 This project is licensed under the [MIT License](LICENSE) with a patent notice. See the LICENSE file for details.
 For commercial use or questions regarding the pending patent, please contact [grf@pgi.re.kr](mailto:grf@pgi.re.kr).
 
-## Citation
- 1. XGBoost: A Scalable Tree Boosting System, https://doi.org/10.1145/2939672.2939785
     
 ## Contact
 pgi@grf.re.kr
 
 ## Version
+XChiMar ver. 1
 
