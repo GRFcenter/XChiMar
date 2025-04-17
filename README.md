@@ -70,7 +70,7 @@ Below is an example configuration file for running the XChiMar pipeline. Modify 
 input_dir: "./example_data/input_data"
 
 # Output directory for corrected VCF and performance metrics
-output_dir: "./example_data/output/"
+output_dir: "./example_data/output_data"
 
 # Path to pre-trained XChiMar model (XGBoost .rds file)
 model_path: "./model/xgboost_final_model.rds"
