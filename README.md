@@ -50,15 +50,15 @@ R environment
 
    1. Input directory containing VCF files
     input_dir: "/your/path/to/input/vcf_dir"
-    # ex) input_dir: "C:/Users/user/OneDrive/Giga_science/XChiMar/example_data/input_data"
+    ex) input_dir: "C:/Users/user/OneDrive/Giga_science/XChiMar/example_data/input_data"
 
    2. Output directory to save results (subfolders for each sample are automatically created)
     output_dir: "/your/path/to/output/results"
-    # ex) output_dir: "C:/Users/user/OneDrive/Giga_science/XChiMar/example_data/output_data"
+    ex) output_dir: "C:/Users/user/OneDrive/Giga_science/XChiMar/example_data/output_data"
 
    3. Trained XGBoost model RDS file path
     model_path: "/your/path/to/xgboost_final_model.rds"
-    # ex) model_path: "C:/Users/user/OneDrive/Giga_science/XChiMar/code/xgboost_final_model.rds"
+    ex) model_path: "C:/Users/user/OneDrive/Giga_science/XChiMar/code/xgboost_final_model.rds"
 
 - The actual XChiMar can be easily run as follows: bash run_XChiMar.sh config.yml
   
