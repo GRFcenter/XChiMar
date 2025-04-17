@@ -19,7 +19,12 @@ In chimeric marmosets, especially in non-blood tissues, standard variant callers
 ## Installation
 
 ## Usage
-
+- The run_XChiMar.sh code loads the pre-trained xgboost model (XChiMar); xgboost_final_model.rds using hair data from Marmoset I4938 
+  samples, and can be used through a simple shell command. 
+- It can be run with the following command: bash run_XChiMar.sh config.yml
+- At this time, the data and directory paths suitable for the user environment are specified in the config.yml file, considering user 
+  convenience and enabling flexible use.
+  
 ## Example
 
 ## LICENSE
