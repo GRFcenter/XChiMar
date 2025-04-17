@@ -17,7 +17,21 @@ In chimeric marmosets, especially in non-blood tissues, standard variant callers
 - Validated across 56 chimeric common marmosets and applied to public datasets across _Callithrix jacchus_, _C. geoffroyi_, and _C. kuhlii_. 
 
 ## Installation
+Linux shell environment
+- bash (
+- bcftools >= 1.9
+- htslib >= 1.9
+- awk
+- R >= 4.3.3
+- Phython3
 
+R environment
+- install.packages("data.table")
+- install.packages("xgboost")
+- install.packages("caret")
+- install.packages("pROC")
+- install.packages("PRROC")
+  
 ## Usage
 - The run_XChiMar.sh code loads the pre-trained xgboost model (XChiMar); xgboost_final_model.rds using hair data from Marmoset I4938 
   samples, and can be used through a simple shell command. 
@@ -36,7 +50,8 @@ This project is licensed under the [MIT License](LICENSE) with a patent notice. 
 For commercial use or questions regarding the pending patent, please contact [grf@pgi.re.kr](mailto:grf@pgi.re.kr).
 
 ## Citation
-
+ 1. XGBoost: A Scalable Tree Boosting System, https://doi.org/10.1145/2939672.2939785
+    
 ## Contact
 pgi@grf.re.kr
 
