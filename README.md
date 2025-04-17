@@ -41,7 +41,7 @@ R environment
   
 ## Example
 - We provide example_data and code in https://github.com/GRFcenter/XChiMar/.
-- Using the data ("https://github.com/GRFcenter/XChiMar/example_data/input_data/1612151M.vcf.gz"), you can obtain the genotype prediction 
+- Using the data ("./GRFcenter/XChiMar/example_data/input_data/1612151M.vcf.gz"), you can obtain the genotype prediction 
   performance using the XChiMar model and the updated genotype vcf file as a result.
 - You can use it easily by setting the path according to your user environment in config.yml. As follows: bash run_XChiMar.sh config.yml
 
