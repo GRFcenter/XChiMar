@@ -18,7 +18,7 @@ In chimeric marmosets, especially in non-blood tissues, standard variant callers
 
 ## Installation
 Linux shell environment
-- bash (
+- bash  
 - bcftools >= 1.9
 - htslib >= 1.9
 - awk
