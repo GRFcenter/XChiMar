@@ -43,8 +43,25 @@ R environment
 - We provide example_data and code in https://github.com/GRFcenter/XChiMar/.
 - Using the data ("./GRFcenter/XChiMar/example_data/input_data/1612151M.vcf.gz"), you can obtain the genotype prediction 
   performance using the XChiMar model and the updated genotype vcf file as a result.
-- You can use it easily by setting the path according to your user environment in config.yml. As follows: bash run_XChiMar.sh config.yml
+- If you set the path as follows in config.yml, you can easily use it according to your environment as follows.
+__________________________________________________________________________________________________
+- # config.yaml
+# Just change the path to suit your environment.
 
+# 1. Input directory containing VCF files
+input_dir: "/your/path/to/input/vcf_dir"
+# ex) input_dir: "C:/Users/user/OneDrive/Giga_science/XChiMar/example_data/input_data"
+
+# 2. Output directory to save results (subfolders for each sample are automatically created)
+output_dir: "/your/path/to/output/results"
+# ex) output_dir: "C:/Users/user/OneDrive/Giga_science/XChiMar/example_data/output_data"
+
+# 3. Trained XGBoost model RDS file path
+model_path: "/your/path/to/xgboost_final_model.rds"
+# ex) model_path: "C:/Users/user/OneDrive/Giga_science/XChiMar/code/xgboost_final_model.rds"
+__________________________________________________________________________________________________
+- The actual XChiMar can be easily run as follows: bash run_XChiMar.sh config.yml
+  
 ## LICENSE
 This project is licensed under the [MIT License](LICENSE) with a patent notice. See the LICENSE file for details.
 For commercial use or questions regarding the pending patent, please contact [grf@pgi.re.kr](mailto:grf@pgi.re.kr).
