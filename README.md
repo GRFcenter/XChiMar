@@ -45,20 +45,20 @@ R environment
   performance using the XChiMar model and the updated genotype vcf file as a result.
 - If you set the path as follows in config.yml, you can easily use it according to your environment as follows.
 
-# config.yaml
-# Just change the path to suit your environment.
+  - config.yaml -
+   Just change the path to suit your environment.
 
-# 1. Input directory containing VCF files
-input_dir: "/your/path/to/input/vcf_dir"
-# ex) input_dir: "C:/Users/user/OneDrive/Giga_science/XChiMar/example_data/input_data"
+   1. Input directory containing VCF files
+    input_dir: "/your/path/to/input/vcf_dir"
+    # ex) input_dir: "C:/Users/user/OneDrive/Giga_science/XChiMar/example_data/input_data"
 
-# 2. Output directory to save results (subfolders for each sample are automatically created)
-output_dir: "/your/path/to/output/results"
-# ex) output_dir: "C:/Users/user/OneDrive/Giga_science/XChiMar/example_data/output_data"
+   2. Output directory to save results (subfolders for each sample are automatically created)
+    output_dir: "/your/path/to/output/results"
+    # ex) output_dir: "C:/Users/user/OneDrive/Giga_science/XChiMar/example_data/output_data"
 
-# 3. Trained XGBoost model RDS file path
-model_path: "/your/path/to/xgboost_final_model.rds"
-# ex) model_path: "C:/Users/user/OneDrive/Giga_science/XChiMar/code/xgboost_final_model.rds"
+   3. Trained XGBoost model RDS file path
+    model_path: "/your/path/to/xgboost_final_model.rds"
+    # ex) model_path: "C:/Users/user/OneDrive/Giga_science/XChiMar/code/xgboost_final_model.rds"
 
 - The actual XChiMar can be easily run as follows: bash run_XChiMar.sh config.yml
   
