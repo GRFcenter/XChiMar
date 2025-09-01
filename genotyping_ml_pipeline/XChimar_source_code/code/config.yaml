@@ -1,0 +1,15 @@
+# config.yaml
+# Just change the path to suit your environment.
+
+# 1. Input directory containing VCF files
+# input_dir: "/your/path/to/input/vcf_dir"
+# input_dir: "/Node4/Research/Project1/PGI-Marmoset-2022-12/Workspace/jhcha/NGS_analysis/NGS_Step3/results/gvcf2individual_vcf/"
+input_dir: "/Node4/Research/Project1/PGI-Marmoset-2022-12/Workspace/cjp81/mpileup_call_gvcf/results/gvcf2individual_vcf/"
+
+# 2. Output directory to save results (subfolders for each sample are automatically created)
+# output_dir: "/your/path/to/output/results"
+output_dir: "/Node4/Research/Project1/PGI-Marmoset-2022-12/Workspace/jhcha/machine_learning_marmoset/Journal_analysis/analysis/vcf_genotyping"
+
+# 3. Trained XGBoost model RDS file path
+# model_path: "/your/path/to/xgboost_final_model.rds"
+model_path: "/Node4/Research/Project1/PGI-Marmoset-2022-12/Workspace/jhcha/machine_learning_marmoset/Journal_analysis/code/vcf_genotyping_code/XChimar/xgboost_final_model.rds"

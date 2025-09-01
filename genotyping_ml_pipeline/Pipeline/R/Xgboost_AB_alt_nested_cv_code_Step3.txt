@@ -1,0 +1,294 @@
+##############################################################################################
+## 0. Bulid xgboost best model using 5-fold nested cross validation.      ##  2025.04.07   ##
+##############################################################################################
+ 														# screen -r xgboost
+# Training data loading 
+
+transformed_data <- read.table(
+  "/Node4/Research/Project1/PGI-Marmoset-2022-12/Workspace/jhcha/machine_learning_marmoset/Journal_analysis/workspace/I4938_data/final/final_input_data.txt", header = TRUE, sep = "\t", stringsAsFactors = FALSE)
+
+
+
+transformed_data$Y[transformed_data$Y == "HET"] <- "alt_ref"
+transformed_data$Y[transformed_data$Y == "HOM_ALT"] <- "alt_alt"
+transformed_data$Y[transformed_data$Y == "HOM_REF"] <- "ref_ref"
+
+
+transformed_data$abratio <- 1 - transformed_data$abratio 
+
+##################################################################
+# 2. Building an xgboost model using 5-fold Nested cross validation method training
+##################################################################
+
+# Library loading 
+library(caret)
+library(xgboost)
+
+set.seed(123)
+
+# Step 1: Data (Training 80%, Test 20% - Maintain class ratio)
+train_index <- createDataPartition(transformed_data$Y, p = 0.8, list = FALSE) 
+train_data <- transformed_data[train_index, ]
+test_data <- transformed_data[-train_index, ]
+
+# Step 2: Outer 5-Fold CV   
+outer_folds <- createFolds(train_data$Y, k = 5, returnTrain = TRUE) 
+
+# Saving Result by list
+nested_results <- list()
+
+# Outer Loop (5-Fold)
+for (i in 1:length(outer_folds)) {
+  
+  cat("\n===== Outer Fold", i, "=====\n")
+  
+  # Outer Fold: Train/Validation Set divide
+  train_index_inner <- outer_folds[[i]]
+  inner_train_data <- train_data[train_index_inner, ]
+  validation_data <- train_data[-train_index_inner, ]
+  
+  # X, Y divide (using "abratio")
+  x_inner_train <- as.matrix(inner_train_data[, "abratio", drop = FALSE])
+  y_inner_train <- factor(inner_train_data$Y)  
+  x_validation <- as.matrix(validation_data[, "abratio", drop = FALSE])
+  y_validation <- factor(validation_data$Y)  
+
+  # Step 3: Inner 5-Fold CV for Hyperparameter Tuning (Using "caret")
+  train_control <- trainControl(
+    method = "cv", 
+    number = 5,
+    verboseIter = FALSE,
+    savePredictions = "final",
+    classProbs = TRUE  # Using classProbs for probability-based predictions
+  )
+
+  # XGBoost Setting model parameters
+  xgb_grid <- expand.grid(
+    nrounds = 100,         
+    eta = 0.1,             
+    max_depth = 6,         
+    gamma = 0,             
+    colsample_bytree = 0.8, 
+    min_child_weight = 1,  
+    subsample = 0.8        
+  )
+
+  # Finding optimal hyperparameters via inner 5-fold CV (using "caret")
+  xgb_tuned <- train(
+    x_inner_train, y_inner_train,
+    method = "xgbTree",
+    trControl = train_control,
+    tuneGrid = xgb_grid,
+    metric = "Accuracy"
+  )
+
+  # Step 4: Predict the predicted value based on probability
+  pred_prob <- predict(xgb_tuned, x_validation, type = "prob")
+
+  # Convert to the class with the highest probability
+  predictions <- colnames(pred_prob)[max.col(pred_prob, ties.method = "first")]
+
+  # Factor transform to fit the actual y for comparison
+  predictions <- factor(predictions, levels = levels(y_validation))
+
+  # Accuracy calculation (excluding NA values)
+  accuracy <- mean(predictions == y_validation, na.rm = TRUE)  
+
+  cat("Validation Accuracy (Fold", i, "):", accuracy, "\n")
+
+  # Save Results
+  nested_results[[i]] <- list(
+    best_model = xgb_tuned,  
+    accuracy = accuracy
+  )
+}
+
+# Step 5: Test Set Evaluation with the Optimal Model
+best_outer_fold <- which.max(sapply(nested_results, function(x) x$accuracy))
+final_model <- nested_results[[best_outer_fold]]$best_model
+
+# Test Data conversion
+test_data$Y <- factor(test_data$Y)  
+y_test <- test_data$Y  
+
+# Perform predictions on **Test Set (20%)** using the optimal model
+test_pred_prob <- predict(final_model, as.matrix(test_data[, "abratio", drop = FALSE]), type = "prob")
+
+# Convert to the class with the highest probability
+test_predictions <- colnames(test_pred_prob)[max.col(test_pred_prob, ties.method = "first")]
+
+# Factor transform to fit the actual y for comparison
+test_predictions <- factor(test_predictions, levels = levels(y_test))
+
+# Step 6. Calculate final test accuracy
+test_accuracy <- mean(test_predictions == y_test, na.rm = TRUE)
+
+cat("\n===== Final Test Set Accuracy:", test_accuracy, "=====\n")
+# ===== Final Test Set Accuracy: 0.9707523
+ 
+#####################################################
+# 3. Calculating additional performance metrics for Test Set(20%) 
+#####################################################
+
+# Confusion Matrix 
+test_conf_matrix <- table(Predicted = test_predictions, Actual = y_test)
+cat("\n=== Confusion Matrix (Test Data) ===\n")
+print(test_conf_matrix)
+#           Actual
+# Predicted alt_alt alt_ref ref_ref
+#  alt_alt  327482    2009     115
+#  alt_ref    3004  488946   12778
+#   ref_ref     256   13649  239403
+
+
+# Accuracy  
+test_accuracy <- sum(diag(test_conf_matrix)) / sum(test_conf_matrix)
+cat("\nTest Data Accuracy:", test_accuracy, "\n")
+# Test Data Accuracy: 0.9707523 
+
+
+# Balanced Accuracy  
+test_balanced_accuracy <- mean(diag(prop.table(test_conf_matrix, 1)))
+cat("Balanced Accuracy:", test_balanced_accuracy, "\n")
+# Balanced Accuracy:  0.9691313
+
+
+# Precision, Recall, F1-score  
+test_precision <- diag(test_conf_matrix) / rowSums(test_conf_matrix)
+test_recall <- diag(test_conf_matrix) / colSums(test_conf_matrix)
+test_f1_score <- 2 * (test_precision * test_recall) / (test_precision + test_recall)
+
+cat("\nPrecision (per class):", test_precision, "\n")
+# Precision (per class):  0.9935559 0.9687317 0.9451064 
+
+cat("Recall (per class):", test_recall, "\n")
+# Recall (per class): 0.9901434 0.9689697 0.9488973
+
+cat("F1-score (per class):", test_f1_score, "\n")
+# F1-score (per class):  0.9918467 0.9688507 0.946998 
+
+# Error Rate  
+test_error_rate <- 1 - test_accuracy
+cat("Error Rate:", test_error_rate, "\n")
+# Error Rate: 0.02924768
+
+
+
+# Multiclass AUC  
+library(pROC)
+test_roc <- multiclass.roc(response = y_test, predictor = as.matrix(test_pred_prob))
+cat("Multiclass AUC:", test_roc$auc, "\n")
+# Multiclass AUC: 0.9940227
+
+# Area Under Precision-Recall Curve  
+library(PRROC)
+test_auprc <- sapply(1:ncol(test_pred_prob), function(i) {
+  PR <- pr.curve(
+    scores.class0 = test_pred_prob[, i], 
+    weights.class0 = (y_test == levels(y_test)[i]), 
+    curve = TRUE
+  )
+  PR$auc.integral
+})
+cat("AUPRC (per class):", test_auprc, "\n")
+# AUPRC (per class) : 0.9944952 0.9904309 0.9653611 
+
+saveRDS(final_model, file = "/BiO/Access/home/jhcha/xgboost_ABalt_final_model.rds")  
+ 
+# saveRDS(final_model, file = "/Node4/Research/Project1/PGI-Marmoset-2022-12/Workspace/jhcha/machine_learning_marmoset/Journal_analysis/code/xgboost_ABalt_final_model.rds")
+
+
+ 
+
+#############################################################################
+# 4. Evaluate on external data with Test data (1722300M)
+#############################################################################
+ 
+execution_time <- system.time({
+
+ # Data loading
+file_path <- "/Node4/Research/Project1/PGI-Marmoset-2022-12/Workspace/jhcha/machine_learning_marmoset/1722300M_gvcf_parsing_output/merged_chr_final_dat/combined_fin.dat.txt"
+
+  test_data_300M <- as.data.frame(fread(file_path))
+  colnames(test_data_300M) <- c("CHROM", "POS", "abratio", "Y")
+
+  test_data_300M$id <- paste(test_data_300M$CHROM, test_data_300M$POS, sep = "_")
+  test_data_300M <- test_data_300M[, c("id", "abratio", "Y")]
+  test_data_300M$Y <- as.factor(test_data_300M$Y)
+  test_data_300M[which(test_data_300M$abratio <= 0.2),"Y"] <- "alt_alt"
+  test_data_300M[which(test_data_300M$abratio > 0.2 & test_data_300M$abratio < 0.8), "Y"] <- "alt_ref"
+  test_data_300M[which(test_data_300M$abratio >= 0.8),"Y"] <- "ref_ref"
+    
+  test_data_300M$abratio <- 1- test_data_300M$abratio
+
+  # Preparing for prediction
+  x_test <- as.matrix(test_data_300M[, "abratio", drop = FALSE])
+  y_test <- test_data_300M$Y
+
+  # Prediction
+  test_predictions <- predict(final_model, x_test)
+  test_probabilities <- predict(final_model, x_test, type = "prob")
+
+   
+  test_conf_matrix <- table(Predicted = test_predictions, Actual = test_data_300M$Y)
+  cat("\n=== Confusion Matrix (Test Data) ===\n")
+  print(test_conf_matrix)
+
+  test_accuracy <- sum(diag(test_conf_matrix)) / sum(test_conf_matrix)
+  cat("\nTest Data Accuracy:", test_accuracy, "\n")
+
+  test_balanced_accuracy <- mean(diag(prop.table(test_conf_matrix, 1)))
+  cat("Balanced Accuracy:", test_balanced_accuracy, "\n")
+
+  test_precision <- diag(test_conf_matrix) / rowSums(test_conf_matrix)
+  test_recall <- diag(test_conf_matrix) / colSums(test_conf_matrix)
+  test_f1_score <- 2 * (test_precision * test_recall) / (test_precision + test_recall)
+
+  cat("\nPrecision (per class):", test_precision, "\n")
+  cat("Recall (per class):", test_recall, "\n")
+  cat("F1-score (per class):", test_f1_score, "\n")
+
+  test_error_rate <- 1 - test_accuracy
+  cat("Error Rate:", test_error_rate, "\n")
+
+  # AUC
+  library(pROC)
+  test_roc <- multiclass.roc(response = test_data_300M$Y, predictor = as.matrix(test_probabilities))
+  cat("Multiclass AUC:", test_roc$auc, "\n")
+
+  # AUPRC
+  library(PRROC)
+  test_auprc <- sapply(1:ncol(test_probabilities), function(i) {
+    PR <- pr.curve(
+      scores.class0 = test_probabilities[, i],
+      weights.class0 = (test_data_300M$Y == levels(test_data_300M$Y)[i]),
+      curve = TRUE
+    )
+    PR$auc.integral
+  })
+  cat("AUPRC (per class):", test_auprc, "\n")
+
+}) 
+
+ 
+# === Confusion Matrix (Test Data) ===
+#          Actual
+# Predicted  alt_alt  alt_ref  ref_ref
+#   alt_alt    68164        0        0
+#  alt_ref     5325   324818    35743
+#  ref_ref        0        0 10519029
+
+# Test Data Accuracy: 0.9962506
+# Balanced Accuracy: 0.9625858
+
+# Precision (per class): 1 0.8877574 1
+# Recall (per class): 0.9275402 1 0.9966136
+# F1-score (per class): 0.9624081 0.9405418 0.9983039
+# Error Rate: 0.003749448
+# Multiclass AUC: 0.9993685
+# AUPRC (per class): 0.999978 0.9985808 0.9999994
+
+
+print(execution_time)
+#   user  system elapsed 
+# 355.043  18.863  88.947 

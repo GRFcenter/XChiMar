@@ -1,0 +1,186 @@
+###########################
+## GOLD Standard data ##
+###########################
+library(data.table)
+
+# File path setting 
+file_path <- "/Node4/Research/Project1/PGI-Marmoset-2022-12/Workspace/jekim/chimerism/4938-1/I4938_GoldStandard_mod.csv"
+
+# CSV file loading
+gold_standard_data <- fread(file_path, header = TRUE, sep = ",")
+
+transformed_data <- gold_standard_data[, .(CHROM = Chrom, POS = Pos, abratio= AB_Ratio , Y = True_Genotype)]
+
+table(transformed_data$Y)
+# HET HOM_ALT HOM_REF 
+# 2528227 1665828 1264597
+
+
+# Converting actual Genotype value according to annotation type
+transformed_data[Y == "HET", Y := "alt_ref"]
+transformed_data[Y == "HOM_ALT", Y := "alt_alt"]
+transformed_data[Y == "HOM_REF", Y := "ref_ref"]
+
+# Identifying results 
+transformed_data<- as.data.frame(transformed_data)
+head(transformed_data)
+#         CHROM   POS abratio 	Y
+# 1 NC_025586.1  7872  0.0588     alt_alt
+# 2 NC_048383.1  3043  0.2500     alt_ref
+# 3 NC_048383.1  3073  0.4286     alt_ref
+# 4 NC_048383.1  3088  0.2308     alt_alt
+# 5 NC_048383.1  3117  0.2069     alt_ref
+# 6 NC_048383.1  3132  0.9111     ref_ref
+
+
+transformed_data$id <- paste(transformed_data$CHROM, transformed_data$POS, sep = "_")
+
+
+###########################################################################  
+# Gold standard data loci pasing within bam file for making abratio contain depth information  #
+###########################################################################
+
+############
+## R ## 
+############
+
+# Generating Data frame for BED file  (start: POS-1, end: POS)
+bed_data <- transformed_data[, c("CHROM", "POS")]
+bed_data$start <- bed_data$POS - 1
+bed_data$end <- bed_data$POS
+
+# Transfor Column order 
+bed_bedformat <- bed_data[, c("CHROM", "start", "end")]
+
+# Saving BED file
+write.table(bed_bedformat,
+            file = "/Node4/Research/Project1/PGI-Marmoset-2022-12/Workspace/jekim/chimerism/4938-1/loci_list.bed",
+            sep = "\t", row.names = FALSE, col.names = FALSE, quote = FALSE)
+
+cat(" BED file saved successfully.\n")
+
+## Generating loci_list.bed   
+
+############
+## Linux ## 
+############
+
+samtools mpileup -f /Node4/Research/Project1/PGI-Marmoset-2022-12/Resource/GCA_009663435.2/GCF_009663435.1_Callithrix_jacchus_cj1700_1.1_genomic.fna \
+  -l /Node4/Research/Project1/PGI-Marmoset-2022-12/Workspace/jhcha/loci_list.bed \
+  /Node4/Research/Project1/PGI-Marmoset-2022-12/Workspace/jekim/chimerism/4938-1/I4938.sort.dedup.bam \
+  | awk '{
+      ref = $3;
+      n = split($5, b, "");
+      counts["A"]=0; counts["C"]=0; counts["G"]=0; counts["T"]=0;
+      for (i = 1; i <= n; i++) {
+        if (b[i] ~ /[.,]/) counts[toupper(ref)]++;
+        else if (toupper(b[i]) ~ /[ACGT]/) counts[toupper(b[i])]++;
+      }
+      print $1, $2, ref, counts["A"], counts["C"], counts["G"], counts["T"];
+    }' > loci_depth_summary.txt
+
+
+####################################
+## Generating final training input data in R ## 
+####################################
+
+library(data.table)
+
+# 1. Loading
+depth_data <- fread("/Node4/Research/Project1/PGI-Marmoset-2022-12/Workspace/jhcha/loci_depth_summary.txt", header = FALSE, sep = " ")
+depth_data <-  as.data.frame(depth_data)
+
+colnames(depth_data) <- c("CHROM", "POS", "REF", "A", "C", "G", "T")
+
+# 2. Total_depth calculate
+depth_data$total_depth <- depth_data$A + depth_data$C + depth_data$G + depth_data$T
+
+# 3. ref_depth calculate 
+depth_data$ref_depth <- ifelse(toupper(depth_data$REF) == "A", depth_data$A,
+                        ifelse(toupper(depth_data$REF) == "C", depth_data$C,
+                        ifelse(toupper(depth_data$REF) == "G", depth_data$G,
+                        ifelse(toupper(depth_data$REF) == "T", depth_data$T, NA))))
+
+# 4. abratio calculate 
+depth_data$abratio <- ifelse(depth_data$total_depth > 0, depth_data$ref_depth / depth_data$total_depth, NA)
+depth_data <- depth_data[depth_data$total_depth > 7,]
+
+dim(depth_data)
+# [1] 5453331      10
+
+depth_data$id <- paste(depth_data$CHROM, depth_data$POS, sep = "_")
+depth_data$Y <- transformed_data[match(depth_data$id,  transformed_data$id), "Y"]
+
+table(is.na(depth_data$abratio))
+#  FALSE    TRUE 
+# 5438222   15109 
+
+depth_data<- depth_data[!is.na(depth_data$abratio),]
+table(is.na(depth_data$abratio))
+#  FALSE 
+# 5438222 
+
+transformed_data <- depth_data[,c("CHROM" , "POS", "abratio", "Y")]
+
+head(transformed_data)
+#        CHROM  POS   abratio       Y
+# 1 NC_048395.1 1029 0.5166667 alt_ref
+# 2 NC_048395.1 1030 0.4915254 alt_ref
+# 3 NC_048395.1 1063 0.2156863 alt_ref
+# 4 NC_048395.1 1122 0.6000000 alt_ref
+# 5 NC_048395.1 1126 0.6944444 alt_ref
+# 6 NC_048395.1 1271 0.7083333 alt_ref
+
+ 
+transformed_data <- na.omit(transformed_data)
+transformed_data$Y <- factor(transformed_data$Y, 
+                             levels = c("alt_ref", "ref_ref", "alt_alt"),
+                             labels = c("HET", "HOM_REF", "HOM_ALT"))
+
+dim(transformed_data)
+#  5438219       4
+
+table(transformed_data$Y)
+# HET HOM_REF HOM_ALT 
+# 2523024 1261483 1653712 
+
+head(transformed_data)
+#    CHROM  POS    abratio       Y
+# 1 NC_048383.1 3043 0.50000000     HET
+# 2 NC_048383.1 3073 0.60000000     HET
+# 3 NC_048383.1 3088 0.18181818 HOM_ALT
+# 4 NC_048383.1 3117 0.05263158     HET
+# 5 NC_048383.1 3132 0.89090909 HOM_REF
+# 6 NC_048383.1 3134 0.77777778     HET
+
+write.table(transformed_data, 
+            "/Node4/Research/Project1/PGI-Marmoset-2022-12/Workspace/jhcha/machine_learning_marmoset/Journal_analysis/workspace/I4938_data/final/final_input_data.txt", 
+            sep = "\t", 
+            row.names = FALSE, 
+            col.names = TRUE, 
+            quote = FALSE)
+
+
+
+###############################
+# Identify final input data distribution  
+###############################
+library(ggplot2)
+
+# Reloading final training input data
+
+transformed_data <- read.table(
+  "/Node4/Research/Project1/PGI-Marmoset-2022-12/Workspace/jhcha/machine_learning_marmoset/Journal_analysis/workspace/I4938_data/final/final_input_data.txt", header = TRUE, sep = "\t", stringsAsFactors = FALSE)
+
+pdf("/Node4/Research/Project1/PGI-Marmoset-2022-12/Workspace/jhcha/abratio_violin_plot.pdf", width = 7, height = 5)
+
+ggplot(transformed_data, aes(x = Y, y = abratio, fill = Y)) +
+  geom_violin(trim = TRUE, scale = "width", adjust = 2) +
+  geom_boxplot(width = 0.1, fill = "white", outlier.size = 0.1) +
+  theme_minimal() +
+  labs(title = "AB Ratio Distribution by Genotype Category",
+       x = "True Genotype",
+       y = "AB Ratio") +
+  theme(legend.position = "none")
+
+dev.off()

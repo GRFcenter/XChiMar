@@ -1,0 +1,156 @@
+############################################################################### 
+# 1.  Load parsed VCF files in R, perform preprocessing and XGBoost prediction
+############################################################################### 
+
+#  Load necessary libraries
+library(data.table)
+
+# Directory containing VCF parsing output files
+input_dir <- "/Node4/Research/Project1/PGI-Marmoset-2022-12/Workspace/jhcha/machine_learning_marmoset/Journal_analysis/analysis/vcf_genotyping"
+
+# Find all *_output.txt files recursively under the input directory
+file_list <- list.files(input_dir, pattern = "_output.txt$", full.names = TRUE, recursive = TRUE)
+
+
+#######################################################################################
+# 2. Define function to calculate Abratio
+#######################################################################################
+  
+calculate_abratio_ref <- function(row){
+  # Handle AD value
+  ad_values <- as.numeric(unlist(strsplit(row["AD"], ",")))
+  
+  # Reference value (first AD value)
+  ref <- ifelse(length(ad_values) > 0, ad_values[1], 0)
+  
+  #  DP (depth) value
+  dp <- as.numeric(row["DP"])
+  
+  # Calculate Abratio
+  if (dp > 0) {
+    return(ref / dp)
+  } else {
+    return(NA) # Return NA if DP is 0
+  }
+}
+ 
+
+################################################################## 
+# 3. Run genotyping automation pipeline after processing all parsing files
+################################################################## 
+
+# Load the previously built xgboost model (XChiMar).
+
+final_model <- readRDS("/Node4/Research/Project1/PGI-Marmoset-2022-12/Workspace/jhcha/machine_learning_marmoset/Journal_analysis/code/xgboost_final_model.rds")
+
+for (file_path in file_list){
+  # Load file
+  data <- fread(file_path, header = TRUE, sep = "\t")
+  data <- as.data.frame(data)
+  data$predicted_Y <- as.character(NA)
+
+
+  # Calculate Abratio by abratio alt
+  data$"abratio" <- 1 - apply(data, 1, calculate_abratio_ref)
+
+  # Remove GT values equal to 1/2
+  sub_data <- data[!data$GT == "1/2", ]
+
+
+  # Set Y value
+  sub_data$Y <- NA
+  sub_data[which(sub_data$abratio >= 0.8), "Y"] <- "alt_alt"
+  sub_data[which(sub_data$abratio > 0.2 & sub_data$abratio < 0.8), "Y"] <- "alt_ref"
+  sub_data[which(sub_data$abratio <= 0.2), "Y"] <- "ref_ref"
+
+
+ 	 # Select required columns
+ 	 res_data <- sub_data[, c("#CHROM", "POS", "abratio", "Y")]
+
+  	# Rename columns
+ 	 colnames(res_data) <- c("CHROM", "POS", "abratio", "Y")
+
+  	# Create test feature matrix and labels
+  	 x_test <- as.matrix(sub_data[, "abratio", drop = FALSE])
+  	 y_test <- sub_data$Y
+
+ 	 # Make predictions on test data
+	 test_predictions <- predict(final_model, x_test)   
+	 test_probabilities <- predict(final_model, x_test, type = "prob") 
+
+  	# Generate confusion matrix
+ 	 test_conf_matrix <- table(test_predictions, y_test) 
+		 
+
+	# Remove "ref_ref" row -> VCF files don't have ref_ref unlike gVCF
+	# test_conf_matrix <- test_conf_matrix[rownames(test_conf_matrix) != "ref_ref", ]
+
+	# Accuracy
+	test_accuracy <- sum(diag(test_conf_matrix)) / sum(test_conf_matrix)
+	# cat("\nTest Data Accuracy:", test_accuracy, "\n")
+	 
+	# Balanced Accuracy  
+	test_balanced_accuracy <- mean(diag(prop.table(test_conf_matrix, 1)))
+	# cat("Balanced Accuracy:", test_balanced_accuracy, "\n")
+	 	
+	# Precision, Recall, F1-score 
+	test_precision <- diag(test_conf_matrix) / rowSums(test_conf_matrix)
+	test_recall <- diag(test_conf_matrix) / colSums(test_conf_matrix)
+	test_f1_score <- 2 * (test_precision * test_recall) / (test_precision + test_recall)
+
+	# cat("\nPrecision (per class):", test_precision, "\n")
+ 	# cat("Recall (per class):", test_recall, "\n")
+ 	# cat("F1-score (per class):", test_f1_score, "\n")
+
+ 
+	####### Genotyping ########
+	res_data$"predicted_Y"<- test_predictions 
+	 
+	
+	res_data$id <- paste(res_data$"CHROM", res_data$POS, sep = "_")
+	
+	data$id <- paste(data$"#CHROM", data$POS, sep = "_")  
+
+	# Convert predicted_Y to character before assignment
+	data$predicted_Y <- as.character(data$predicted_Y) 
+	res_data$predicted_Y <- as.character(res_data$predicted_Y)
+ 
+
+	#  Update predicted_Y values based on ID match
+	data[match(res_data$id, data$id), "predicted_Y"] <- res_data$predicted_Y
+  
+	data[which(data$GT == "1/2"), "predicted_Y"] <- "alt1_alt2"
+	data$predicted_Y <- as.factor(data$predicted_Y)  
+
+	# Convert predicted_Y to VCF GT format: 0/1, 1/1, 1/2
+	data$predicted_Y <- as.character(data$predicted_Y)
+	data[which(data$"predicted_Y"=="alt_alt"), "predicted_Y"] <- "1/1"
+	data[which(data$"predicted_Y"=="alt_ref"), "predicted_Y"] <- "0/1"
+	data[which(data$"predicted_Y"=="alt1_alt2"), "predicted_Y"] <- "1/2"
+	data$predicted_Y <- as.factor(data$predicted_Y) 
+
+	# Below operations annotate the predicted GT values into the actual VCF file through R.
+ 	
+
+ 	 # Set path to final directory
+  	final_dir <- file.path(dirname(file_path), "final")
+
+  	# Set file paths
+  	annotation_file <- file.path(final_dir, "annotation.txt")
+	metrics_file <- file.path(final_dir, "metrics.txt")
+
+  	# Save annotation file
+  	fwrite(data[, c("#CHROM", "POS", "predicted_Y")], annotation_file, sep = "\t", col.names = FALSE)
+	
+	# Save metrics file
+ 	 writeLines(c(
+    		paste("Test Data Accuracy:", test_accuracy),
+    		paste("Balanced Accuracy:", test_balanced_accuracy),
+    		paste("Precision (per class):", paste(test_precision, collapse = ", ")),
+    		paste("Recall (per class):", paste(test_recall, collapse = ", ")),
+    		paste("F1-score (per class):", paste(test_f1_score, collapse = ", "))
+  	), metrics_file)
+
+ 	cat("Saved to:", final_dir, "\n")
+}
+ 
